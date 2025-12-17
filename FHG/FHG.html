@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Starway Crossing</title>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at top, #0b1020, #020617 70%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #e5e7eb;
+    }
+
+    .top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 0.75rem 0;
+  text-align: center;
+  background: rgba(2, 6, 23, 0.9);
+  border-bottom: 1px solid #38bdf8;
+  z-index: 1000;
+}
+
+.top-nav a {
+  color: #7dd3fc;
+  text-decoration: none;
+  margin: 0 0.5rem;
+  font-weight: 500;
+}
+
+.top-nav a:hover {
+  text-decoration: underline;
+}
+
+    .game-shell {
+      width: 540px;
+      background: linear-gradient(180deg, #020617, #030712);
+      border-radius: 18px;
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 45px rgba(56, 189, 248, 0.35);
+      padding: 1.5rem;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 0.25rem;
+      letter-spacing: 1.2px;
+      color: #7dd3fc;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin-bottom: 1rem;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto 1rem;
+      background: linear-gradient(
+        180deg,
+        #020617 0%,
+        #020617 15%,
+        #111827 15%,
+        #111827 85%,
+        #020617 85%
+      );
+      border-radius: 14px;
+      box-shadow: inset 0 0 35px rgba(56, 189, 248, 0.15);
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .accent { color: #38bdf8; }
+
+    button {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 0.6rem;
+      background: linear-gradient(90deg, #38bdf8, #22d3ee);
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      color: #020617;
+      cursor: pointer;
+    }
+
+    button:hover { filter: brightness(1.1); }
+
+    .controls {
+      margin-top: 0.75rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+<nav class="top-nav">
+  <a href="../index.html">Professional Resume</a> |
+  <a href="../Scratch Page/ScratchPage.html">Scratch Page</a> |
+  <a href="FHG.html">Web App</a>
+</nav>
+
+<div class="game-shell">
+  <h1>STARWAY CROSSING</h1>
+  <p class="subtitle">Navigate the cosmic highway</p>
+
+  <canvas id="game" width="420" height="420"></canvas>
+
+  <div class="hud">
+    <div>Score: <span id="score">0</span></div>
+    <div>Level: <span id="level">1</span></div>
+    <div>Speed: <span id="speed">1.0x</span></div>
+  </div>
+
+  <button onclick="restartGame()">Restart Mission</button>
+
+  <div class="controls">
+    Use <span class="accent">Arrow Keys</span> or <span class="accent">WASD</span> to move
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  const tile = 42;
+  const rows = canvas.height / tile;
+  const cols = canvas.width / tile;
+
+  let player, lanes, score, level, speedMult, gameOver;
+
+  function init() {
+    player = { x: Math.floor(cols / 2), y: rows - 1 };
+    score = 0;
+    level = 1;
+    speedMult = 1;
+    gameOver = false;
+    createLanes();
+  }
+
+  function createLanes() {
+    lanes = [];
+    for (let y = 1; y < rows - 1; y++) {
+      if (y % 2 === 0) {
+        lanes.push({
+          y,
+          direction: Math.random() > 0.5 ? 1 : -1,
+          speed: (0.6 + Math.random()) * speedMult,
+          ships: generateShips(y)
+        });
+      }
+    }
+  }
+
+  function generateShips(y) {
+    const ships = [];
+    const count = 1 + Math.floor(level / 2);
+    for (let i = 0; i < count; i++) {
+      ships.push({ x: Math.random() * cols });
+    }
+    return ships;
+  }
+
+  function drawBackground() {
+    ctx.fillStyle = '#020617';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // stars
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    for (let i = 0; i < 40; i++) {
+      ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+    }
+  }
+
+  function drawPlayer() {
+    ctx.fillStyle = '#7dd3fc';
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 12;
+    ctx.fillRect(player.x * tile + 8, player.y * tile + 8, tile - 16, tile - 16);
+    ctx.shadowBlur = 0;
+  }
+
+  function drawShips() {
+    lanes.forEach(lane => {
+      lane.ships.forEach(ship => {
+        ctx.fillStyle = '#f43f5e';
+        ctx.shadowColor = '#f43f5e';
+        ctx.shadowBlur = 10;
+        ctx.fillRect(ship.x * tile + 4, lane.y * tile + 10, tile - 8, tile - 20);
+        ctx.shadowBlur = 0;
+      });
+    });
+  }
+
+  function updateShips() {
+    lanes.forEach(lane => {
+      lane.ships.forEach(ship => {
+        ship.x += 0.02 * lane.speed * lane.direction;
+        if (ship.x > cols) ship.x = -1;
+        if (ship.x < -1) ship.x = cols;
+
+        if (Math.floor(ship.x) === player.x && lane.y === player.y) {
+          gameOver = true;
+        }
+      });
+    });
+  }
+
+  function draw() {
+    drawBackground();
+    drawShips();
+    drawPlayer();
+
+    if (gameOver) {
+      ctx.fillStyle = 'rgba(2,6,23,0.85)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#f43f5e';
+      ctx.font = '28px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('MISSION FAILED', canvas.width / 2, canvas.height / 2);
+    }
+  }
+
+  function loop() {
+    if (!gameOver) {
+      updateShips();
+      draw();
+      requestAnimationFrame(loop);
+    } else {
+      draw();
+    }
+  }
+
+  function move(dx, dy) {
+    if (gameOver) return;
+    player.x = Math.max(0, Math.min(cols - 1, player.x + dx));
+    player.y = Math.max(0, Math.min(rows - 1, player.y + dy));
+
+    if (player.y === 0) {
+      score += 10 * level;
+      level++;
+      speedMult += 0.15;
+      document.getElementById('score').textContent = score;
+      document.getElementById('level').textContent = level;
+      document.getElementById('speed').textContent = speedMult.toFixed(1) + 'x';
+      player.y = rows - 1;
+      createLanes();
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (['ArrowUp', 'w'].includes(e.key)) move(0, -1);
+    if (['ArrowDown', 's'].includes(e.key)) move(0, 1);
+    if (['ArrowLeft', 'a'].includes(e.key)) move(-1, 0);
+    if (['ArrowRight', 'd'].includes(e.key)) move(1, 0);
+  });
+
+  function restartGame() {
+    document.getElementById('score').textContent = 0;
+    document.getElementById('level').textContent = 1;
+    document.getElementById('speed').textContent = '1.0x';
+    init();
+    loop();
+  }
+
+  init();
+  loop();
+</script>
+
+</body>
+</html>
+
